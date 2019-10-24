@@ -56,14 +56,15 @@ and also print a message to `stderr`.
 ```rust
 use wyz::exit::exit;
 
-exit();
+exit!();
 exit!(2);
 exit!(3, "This is a {} message", "failure");
 ```
 
-The default call is `exit(1)`; a call may provide an exit code and, in addition,
-a set of arguments to pass directly to `eprintln!`. The error message is not
-guaranteed to be emitted, as `stderr` may be closed at time of `exit!`.
+The default call is `std::process::exit(1)`; a call may provide its own exit
+code and, in addition, a set of arguments to pass directly to `eprintln!`. The
+error message is not guaranteed to be emitted, as `stderr` may be closed at time
+of `exit!`.
 
 ## `pipe`
 

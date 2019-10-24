@@ -6,7 +6,7 @@
 
 [package]
 name = "wyz"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
 	"myrrlyn <self@myrrlyn.dev>",
 ]
