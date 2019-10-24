@@ -1,6 +1,6 @@
 /*! Prints `Display` instead of `Debug`.
 
-Various APIs in Rust use `Debug` hook to show failure diagnostics. The default
+Various APIs in Rust use `Debug` hooks to show failure diagnostics. The default
 implementation of `Debug` provided by its derive macro prints a source-code
 representation of the value, which may not be the most useful text to show to a
 user.
@@ -13,18 +13,24 @@ called by `Debug` hooks.
 All other formatting traits are passed through without redirection.
 !*/
 
-use core::fmt::{
-	self,
-	Binary,
-	Debug,
-	Display,
-	LowerExp,
-	LowerHex,
-	Octal,
-	Pointer,
-	UpperExp,
-	UpperHex,
-	Formatter,
+use core::{
+	fmt::{
+		self,
+		Binary,
+		Debug,
+		Display,
+		LowerExp,
+		LowerHex,
+		Octal,
+		Pointer,
+		UpperExp,
+		UpperHex,
+		Formatter,
+	},
+	ops::{
+		Deref,
+		DerefMut,
+	},
 };
 
 /** Redirects `Debug` to `Display`, leaving all other formatters unchanged.
@@ -36,7 +42,7 @@ type has. If the wrapped type implements `Display`, this wrapper implements both
 Because Rust does not have negative trait bounds, there is no `Debug`
 implementation if the wrapped type has `Debug` but not `Display`.
 
-Bug the language team.
+Complain to the language team.
 **/
 pub struct Pretty<T>(T);
 
@@ -108,6 +114,20 @@ impl<T: UpperHex> UpperHex for Pretty<T> {
 	}
 }
 
+impl<T> Deref for Pretty<T> {
+	type Target = T;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl<T> DerefMut for Pretty<T> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
+	}
+}
+
 /// Allow any type to wrap itself in `Pretty`.
 impl<T: Sized> From<T> for Pretty<T> {
 	fn from(val: T) -> Self {
@@ -122,3 +142,5 @@ pub trait Prettify: Sized {
 		self.into()
 	}
 }
+
+impl<T: Sized> Prettify for T {}
