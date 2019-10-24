@@ -6,7 +6,7 @@
 
 [package]
 name = "wyz"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
 	"myrrlyn <self@myrrlyn.dev>",
 ]
@@ -26,7 +26,16 @@ repository = "https://github.com/myrrlyn/wyz"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+wyz_enum = { path = "enum", version = "0.1" }
 
 [features]
 alloc = []
 std = ["alloc"]
+
+[workspace]
+members = [
+	"enum",
+]
+
+[patch.crates-io]
+wyz_enum = { path = "enum" }

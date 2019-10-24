@@ -17,6 +17,10 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+extern crate wyz_enum;
+
+pub use wyz_enum::discern;
+
 pub mod conv;
 pub mod pipe;
 pub mod pretty;
