@@ -1,0 +1,35 @@
+[package]
+name = "wyz_enum"
+version = "0.1.0"
+authors = [
+	"myrrlyn <self@myrrlyn.dev>",
+]
+edition = "2018"
+categories = [
+	"rust-patterns",
+]
+description = "Conveniences for working with enums"
+documentation = "https://docs.rs/wyz_enum"
+homepage = "https://myrrlyn.net/crates/wyz"
+keywords = [
+	"enum",
+	"proc-macro",
+]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/myrrlyn/wyz"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+
+[dependencies.syn]
+version = "1"
+features = [
+	"full",
+]
