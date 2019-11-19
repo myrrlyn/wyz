@@ -611,7 +611,7 @@ impl<T> TapOption<T> for Option<T> {
 	}
 
 	fn tap_none<F: FnOnce() -> R, R>(self, func: F) -> Self {
-		if let None = self.as_ref() { func(); } self
+		if self.is_none() { func(); } self
 	}
 }
 
