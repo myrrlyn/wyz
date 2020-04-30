@@ -24,8 +24,8 @@ their compilation cost is small enough to essentially not matter.
 
 1. [`conv`](#conv)
 1. [`exit`](#exit)
+1. [`fmt`](#fmt)
 1. [`pipe`](#pipe)
-1. [`pretty`](#pretty)
 1. [`tap`](#tap)
 
 ## `conv`
@@ -65,6 +65,28 @@ The default call is `std::process::exit(1)`; a call may provide its own exit
 code and, in addition, a set of arguments to pass directly to `eprintln!`. The
 error message is not guaranteed to be emitted, as `stderr` may be closed at time
 of `exit!`.
+
+## `fmt`
+
+Rust uses the `Debug` trait for automatic printing events in several parts of
+the standard library. This module provides wrapper types which forward their
+`Debug` implementation to a specified other formatting trait. It also implements
+extension methods on all types that have format trait implementations to wrap
+them in the corresponding shim type.
+
+```rust
+use wyz::fmt::FmtForward as _;
+
+let val = 6;
+let addr = &val as *const i32;
+println!("{:?}", addr.fmt_pointer());
+```
+
+This snippet uses the `Debug` format template, but will print the `Pointer`
+implementation of `*const i32`.
+
+This is useful for fitting your values into an error-handling framework that
+only uses `Debug`, such as the `fn main() -> Result` program layout.
 
 ## `pipe`
 
@@ -127,12 +149,6 @@ These are the only ways to express `5 |> fma(2, 3)`.
 Sorry.
 
 Bug the language team.
-
-## `pretty`
-
-This is a wrapper type that implements `Debug` by printing the `Display`
-implementation of the wrapped type. Useful for when you want the `Display`
-implementation to get called by a `Debug` hook.
 
 ## `tap`
 

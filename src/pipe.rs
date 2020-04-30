@@ -13,11 +13,11 @@ is possible in the language.
 use wyz::pipe::*;
 
 fn double(x: i32) -> i32 {
-    x * 2
+  x * 2
 }
 
 fn double_ref(x: &i32) -> i32 {
-    *x * 2
+  *x * 2
 }
 
 assert_eq!(5.pipe(double), 10);
@@ -172,9 +172,9 @@ pub trait PipeBorrow {
 	///   pipe call ensures that the lifetime of the origin object is not
 	///   artificially truncated.
 	/// - `func`: A function which receives a trait-directed borrow of the
-	///   receiver’s value type. Before this function is called,
-	///   `<Self as Borrow<T>::borrow>` is called on the `self` reference, and
-	///   the output of that trait borrow is passed to `func`.
+	///   receiver’s value type. Before this function is called, `<Self as
+	///   Borrow<T>::borrow>` is called on the `self` reference, and the output
+	///   of that trait borrow is passed to `func`.
 	///
 	/// # Type Parameters
 	///
@@ -189,7 +189,11 @@ pub trait PipeBorrow {
 	///   the duration `'a`, and extends it through the return value of `func`.
 	#[inline(always)]
 	fn pipe_borrow<'a, T, R>(&'a self, func: impl FnOnce(&'a T) -> R) -> R
-	where Self: Borrow<T>, T: 'a, R: 'a + Sized {
+	where
+		Self: Borrow<T>,
+		T: 'a,
+		R: 'a + Sized,
+	{
 		func(Borrow::<T>::borrow(self))
 	}
 
@@ -202,15 +206,14 @@ pub trait PipeBorrow {
 	///   borrowing, this pipe call ensures that the lifetime of the origin
 	///   object is not artificially truncated.
 	/// - `func`: A function which receives a trait-directed borrow of the
-	///   receiver’s value type. Before this function is called,
-	///   `<Self as BorrowMut<T>::borrow_mut>` is called on the `self`
-	///   reference, and the output of that trait borrow is passed to `func`.
+	///   receiver’s value type. Before this function is called, `<Self as
+	///   BorrowMut<T>::borrow_mut>` is called on the `self` reference, and the
+	///   output of that trait borrow is passed to `func`.
 	///
 	/// # Type Parameters
 	///
-	/// - `T`: The type to which `self` borrows. This is required to be
-	///   defined as a method type parameter so that you can disambiguate at
-	///   call time.
+	/// - `T`: The type to which `self` borrows. This is required to be defined
+	///   as a method type parameter so that you can disambiguate at call time.
 	/// - `R`: The return type of `func`.
 	///
 	/// # Lifetimes
@@ -218,8 +221,15 @@ pub trait PipeBorrow {
 	/// - `'a`: The lifetime of the `self` value. `.pipe_mut` borrows `self` for
 	///   the duration `'a`, and extends it through the return value of `func`.
 	#[inline(always)]
-	fn pipe_borrow_mut<'a, T, R>(&'a mut self, func: impl FnOnce(&'a mut T) -> R) -> R
-	where Self: BorrowMut<T>, T: 'a, R: 'a + Sized {
+	fn pipe_borrow_mut<'a, T, R>(
+		&'a mut self,
+		func: impl FnOnce(&'a mut T) -> R,
+	) -> R
+	where
+		Self: BorrowMut<T>,
+		T: 'a,
+		R: 'a + Sized,
+	{
 		func(BorrowMut::<T>::borrow_mut(self))
 	}
 }
@@ -242,7 +252,11 @@ pub trait PipeAsRef {
 	///   the duration `'a`, and extends it through the return value of `func`.
 	#[inline(always)]
 	fn pipe_as_ref<'a, T, R>(&'a self, func: impl FnOnce(&'a T) -> R) -> R
-	where Self: AsRef<T>, T: 'a, R: 'a + Sized {
+	where
+		Self: AsRef<T>,
+		T: 'a,
+		R: 'a + Sized,
+	{
 		func(AsRef::<T>::as_ref(self))
 	}
 
@@ -261,8 +275,15 @@ pub trait PipeAsRef {
 	/// - `'a`: The lifetime of the `self` value. `.pipe_mut` borrows `self` for
 	///   the duration `'a`, and extends it through the return value of `func`.
 	#[inline(always)]
-	fn pipe_as_mut<'a, T, R>(&'a mut self, func: impl FnOnce(&'a mut T) -> R) -> R
-	where Self: AsMut<T>, T: 'a, R: 'a + Sized {
+	fn pipe_as_mut<'a, T, R>(
+		&'a mut self,
+		func: impl FnOnce(&'a mut T) -> R,
+	) -> R
+	where
+		Self: AsMut<T>,
+		T: 'a,
+		R: 'a + Sized,
+	{
 		func(AsMut::<T>::as_mut(self))
 	}
 }
@@ -283,8 +304,14 @@ pub trait PipeDeref {
 	/// - `'a`: The lifetime of the `self` value. `.pipe_mut` borrows `self` for
 	///   the duration `'a`, and extends it through the return value of `func`.
 	#[inline(always)]
-	fn pipe_deref<'a, R>(&'a self, func: impl FnOnce(&'a <Self as Deref>::Target) -> R) -> R
-	where Self: Deref, R: 'a + Sized {
+	fn pipe_deref<'a, R>(
+		&'a self,
+		func: impl FnOnce(&'a <Self as Deref>::Target) -> R,
+	) -> R
+	where
+		Self: Deref,
+		R: 'a + Sized,
+	{
 		func(Deref::deref(self))
 	}
 
@@ -303,14 +330,29 @@ pub trait PipeDeref {
 	/// - `'a`: The lifetime of the `self` value. `.pipe_mut` borrows `self` for
 	///   the duration `'a`, and extends it through the return value of `func`.
 	#[inline(always)]
-	fn pipe_deref_mut<'a, R>(&'a mut self, func: impl FnOnce(&'a mut <Self as Deref>::Target) -> R) -> R
-	where Self: DerefMut, R: 'a + Sized {
+	fn pipe_deref_mut<'a, R>(
+		&'a mut self,
+		func: impl FnOnce(&'a mut <Self as Deref>::Target) -> R,
+	) -> R
+	where
+		Self: DerefMut,
+		R: 'a + Sized,
+	{
 		func(DerefMut::deref_mut(self))
 	}
 }
 
-impl<T: Sized> Pipe for T {}
-impl<T> PipeRef for T {}
-impl<T> PipeBorrow for T {}
-impl<T> PipeAsRef for T {}
-impl<T> PipeDeref for T {}
+impl<T: Sized> Pipe for T {
+}
+
+impl<T> PipeRef for T {
+}
+
+impl<T> PipeBorrow for T {
+}
+
+impl<T> PipeAsRef for T {
+}
+
+impl<T> PipeDeref for T {
+}

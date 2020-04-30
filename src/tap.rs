@@ -169,13 +169,13 @@ use wyz::tap::TapResult;
 let mut err_ct = 0;
 
 {
-  let mut action = |e: &&str| {
-    err_ct += 1;
-    eprintln!("ERROR: {}", e);
-  };
+ let mut action = |e: &&str| {
+  err_ct += 1;
+  eprintln!("ERROR: {}", e);
+ };
 
-  Ok::<_, &str>("success").tap_err(&mut action);
-  Err::<(), _>("failure").tap_err(&mut action);
+ Ok::<_, &str>("success").tap_err(&mut action);
+ Err::<(), _>("failure").tap_err(&mut action);
 } // I didn't want to write the closure twice
 
 assert_eq!(err_ct, 1);
@@ -276,17 +276,26 @@ pub trait Tap: Sized {
 	/// logging values with `eprintln!` or the `log` crate and those are hard to
 	/// nicely demonstrate in tests.
 	fn tap<F, R>(self, func: F) -> Self
-	where F: FnOnce(&Self) -> R, R: Sized {
-		func(&self); self
+	where
+		F: FnOnce(&Self) -> R,
+		R: Sized,
+	{
+		func(&self);
+		self
 	}
 
 	/// Calls `tap` in debug builds, and does nothing in release builds.
 	#[allow(unused_variables)]
 	#[cfg_attr(not(debug_assertions), allow(unused_variables))]
 	fn tap_dbg<F, R>(self, func: F) -> Self
-	where F: FnOnce(&Self) -> R, R: Sized {
-		#[cfg(debug_assertions)] return self.tap(func);
-		#[cfg(not(debug_assertions))] return self;
+	where
+		F: FnOnce(&Self) -> R,
+		R: Sized,
+	{
+		#[cfg(debug_assertions)]
+		return self.tap(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 
 	/// Provides mutable access for modification.
@@ -305,21 +314,31 @@ pub trait Tap: Sized {
 	/// assert_eq!(full, "Hello, reader!");
 	/// ```
 	fn tap_mut<F, R>(mut self, func: F) -> Self
-	where F: FnOnce(&mut Self) -> R, R: Sized {
-		func(&mut self); self
+	where
+		F: FnOnce(&mut Self) -> R,
+		R: Sized,
+	{
+		func(&mut self);
+		self
 	}
 
 	/// Calls `tap_mut` in debug builds, and does nothing in release builds.
 	#[allow(unused_mut, unused_variables)]
 	#[cfg_attr(not(debug_assertions), allow(unused_variables))]
 	fn tap_mut_dbg<F, R>(self, func: F) -> Self
-	where F: FnOnce(&mut Self) -> R, R: Sized {
-		#[cfg(debug_assertions)] return self.tap_mut(func);
-		#[cfg(not(debug_assertions))] return self;
+	where
+		F: FnOnce(&mut Self) -> R,
+		R: Sized,
+	{
+		#[cfg(debug_assertions)]
+		return self.tap_mut(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 }
 
-impl<T: Sized> Tap for T {}
+impl<T: Sized> Tap for T {
+}
 
 /** Borrowing Tap
 
@@ -364,23 +383,39 @@ pub trait TapBorrow<T: ?Sized>: Sized {
 	///   .tap_borrow(|s: &str| len = s.len());
 	/// ```
 	fn tap_borrow<F, R>(self, func: F) -> Self
-	where Self: Borrow<T>, F: FnOnce(&T) -> R, R: Sized {
-		func(Borrow::<T>::borrow(&self)); self
+	where
+		Self: Borrow<T>,
+		F: FnOnce(&T) -> R,
+		R: Sized,
+	{
+		func(Borrow::<T>::borrow(&self));
+		self
 	}
 
 	/// Calls `tap_borrow` in debug builds, and does nothing in release builds.
 	#[allow(unused_variables)]
 	#[cfg_attr(not(debug_assertions), allow(unused_variables))]
 	fn tap_borrow_dbg<F, R>(self, func: F) -> Self
-	where Self: Borrow<T>, F: FnOnce(&T) -> R, R: Sized {
-		#[cfg(debug_assertions)] return self.tap_borrow(func);
-		#[cfg(not(debug_assertions))] return self;
+	where
+		Self: Borrow<T>,
+		F: FnOnce(&T) -> R,
+		R: Sized,
+	{
+		#[cfg(debug_assertions)]
+		return self.tap_borrow(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 
 	/// Provides mutable access to the borrow for modification.
 	fn tap_borrow_mut<F, R>(mut self, func: F) -> Self
-	where Self: BorrowMut<T>, F: FnOnce(&mut T) -> R, R: Sized {
-		func(BorrowMut::<T>::borrow_mut(&mut self)); self
+	where
+		Self: BorrowMut<T>,
+		F: FnOnce(&mut T) -> R,
+		R: Sized,
+	{
+		func(BorrowMut::<T>::borrow_mut(&mut self));
+		self
 	}
 
 	/// Calls `tap_borrow_mut` in debug builds, and does nothing in release
@@ -388,13 +423,20 @@ pub trait TapBorrow<T: ?Sized>: Sized {
 	#[allow(unused_mut, unused_variables)]
 	#[cfg_attr(not(debug_assertions), allow(unused_variables))]
 	fn tap_borrow_mut_dbg<F, R>(self, func: F) -> Self
-	where Self: BorrowMut<T>, F: FnOnce(&mut T) -> R, R: Sized {
-		#[cfg(debug_assertions)] return self.tap_borrow_mut(func);
-		#[cfg(not(debug_assertions))] return self;
+	where
+		Self: BorrowMut<T>,
+		F: FnOnce(&mut T) -> R,
+		R: Sized,
+	{
+		#[cfg(debug_assertions)]
+		return self.tap_borrow_mut(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 }
 
-impl<T: Sized, U: ?Sized> TapBorrow<U> for T {}
+impl<T: Sized, U: ?Sized> TapBorrow<U> for T {
+}
 
 /** Referential Tap
 
@@ -423,39 +465,39 @@ This example demonstrates disambiguating among multiple implementations.
 use wyz::tap::TapAsRef;
 
 struct Example {
-  a: [u8; 8],
-  b: [u16; 4],
+ a: [u8; 8],
+ b: [u16; 4],
 }
 impl AsRef<[u8]> for Example {
-  fn as_ref(&self) -> &[u8] {
-    &self.a
-  }
+ fn as_ref(&self) -> &[u8] {
+  &self.a
+ }
 }
 impl AsRef<[u16]> for Example {
-  fn as_ref(&self) -> &[u16] {
-    &self.b
-  }
+ fn as_ref(&self) -> &[u16] {
+  &self.b
+ }
 }
 impl AsMut<[u8]> for Example {
-  fn as_mut(&mut self) -> &mut [u8] {
-    &mut self.a
-  }
+ fn as_mut(&mut self) -> &mut [u8] {
+  &mut self.a
+ }
 }
 impl AsMut<[u16]> for Example {
-  fn as_mut(&mut self) -> &mut [u16] {
-    &mut self.b
-  }
+ fn as_mut(&mut self) -> &mut [u16] {
+  &mut self.b
+ }
 }
 
 let mut sum = 0usize;
 let e = Example {
-  a: [0, 1, 2, 3, 4, 5, 6, 7],
-  b: [8, 9, 10, 11],
+ a: [0, 1, 2, 3, 4, 5, 6, 7],
+ b: [8, 9, 10, 11],
 }
-  .tap_ref(|a: &[u8]| sum += a.iter().sum::<u8>() as usize)
-  .tap_ref(|b: &[u16]| sum += b.iter().sum::<u16>() as usize)
-  .tap_ref_mut(|a: &mut [u8]| a.iter_mut().for_each(|e| *e *= 2))
-  .tap_ref_mut(|b: &mut [u16]| b.iter_mut().for_each(|e| *e *= 2));
+ .tap_ref(|a: &[u8]| sum += a.iter().sum::<u8>() as usize)
+ .tap_ref(|b: &[u16]| sum += b.iter().sum::<u16>() as usize)
+ .tap_ref_mut(|a: &mut [u8]| a.iter_mut().for_each(|e| *e *= 2))
+ .tap_ref_mut(|b: &mut [u16]| b.iter_mut().for_each(|e| *e *= 2));
 
 assert_eq!(sum, 66);
 assert_eq!(e.a, [0, 2, 4, 6, 8, 10, 12, 14]);
@@ -468,36 +510,55 @@ assert_eq!(e.b, [16, 18, 20, 22]);
 pub trait TapAsRef<T: ?Sized>: Sized {
 	/// Provides immutable access to the reference for inspection.
 	fn tap_ref<F, R>(self, func: F) -> Self
-	where Self: AsRef<T>, F: FnOnce(&T) -> R {
-		func(AsRef::<T>::as_ref(&self)); self
+	where
+		Self: AsRef<T>,
+		F: FnOnce(&T) -> R,
+	{
+		func(AsRef::<T>::as_ref(&self));
+		self
 	}
 
 	/// Calls `tap_ref` in debug builds, and does nothing in release builds.
 	#[allow(unused_variables)]
 	#[cfg_attr(not(debug_assertions), allow(unused_variables))]
 	fn tap_ref_dbg<F, R>(self, func: F) -> Self
-	where Self: AsRef<T>, F: FnOnce(&T) -> R {
-		#[cfg(debug_assertions)] return self.tap_ref(func);
-		#[cfg(not(debug_assertions))] return self;
+	where
+		Self: AsRef<T>,
+		F: FnOnce(&T) -> R,
+	{
+		#[cfg(debug_assertions)]
+		return self.tap_ref(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 
 	/// Provides mutable access to the reference for modification.
 	fn tap_ref_mut<F, R>(mut self, func: F) -> Self
-	where Self: AsMut<T>, F: FnOnce(&mut T) -> R {
-		func(AsMut::<T>::as_mut(&mut self)); self
+	where
+		Self: AsMut<T>,
+		F: FnOnce(&mut T) -> R,
+	{
+		func(AsMut::<T>::as_mut(&mut self));
+		self
 	}
 
 	/// Calls `tap_ref_mut` in debug builds, and does nothing in release builds.
 	#[allow(unused_mut, unused_variables)]
 	#[cfg_attr(not(debug_assertions), allow(unused_variables))]
 	fn tap_ref_mut_dbg<F, R>(mut self, func: F) -> Self
-	where Self: AsMut<T>, F: FnOnce(&mut T) -> R {
-		#[cfg(debug_assertions)] return self.tap_ref_mut(func);
-		#[cfg(not(debug_assertions))] return self;
+	where
+		Self: AsMut<T>,
+		F: FnOnce(&mut T) -> R,
+	{
+		#[cfg(debug_assertions)]
+		return self.tap_ref_mut(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 }
 
-impl<T: Sized, U: ?Sized> TapAsRef<U> for T {}
+impl<T: Sized, U: ?Sized> TapAsRef<U> for T {
+}
 
 /** Dereferencing Tap
 
@@ -526,35 +587,54 @@ assert_eq!(&v, &[5, 4, 3, 2, 1]);
 pub trait TapDeref: Sized {
 	/// Immutably dereferences `self` for inspection.
 	fn tap_deref<F, R>(self, func: F) -> Self
-	where Self: Deref, F: FnOnce(&<Self as Deref>::Target) -> R {
-		func(Deref::deref(&self)); self
+	where
+		Self: Deref,
+		F: FnOnce(&<Self as Deref>::Target) -> R,
+	{
+		func(Deref::deref(&self));
+		self
 	}
 
 	/// Calls `tap_deref` in debug builds, and does nothing in release builds.
 	#[cfg_attr(not(debug_assertions), allow(unused_variables))]
 	fn tap_deref_dbg<F, R>(self, func: F) -> Self
-	where Self: Deref, F: FnOnce(&<Self as Deref>::Target) -> R {
-		#[cfg(debug_assertions)] return self.tap_deref(func);
-		#[cfg(not(debug_assertions))] return self;
+	where
+		Self: Deref,
+		F: FnOnce(&<Self as Deref>::Target) -> R,
+	{
+		#[cfg(debug_assertions)]
+		return self.tap_deref(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 
 	/// Mutably dereferences `self` for modification.
 	fn tap_deref_mut<F, R>(mut self, func: F) -> Self
-	where Self: DerefMut, F: FnOnce(&mut <Self as Deref>::Target) -> R {
-		func(DerefMut::deref_mut(&mut self)); self
+	where
+		Self: DerefMut,
+		F: FnOnce(&mut <Self as Deref>::Target) -> R,
+	{
+		func(DerefMut::deref_mut(&mut self));
+		self
 	}
 
 	/// Calls `tap_deref_mut` in debug builds, and does nothing in release
 	/// builds.
 	#[cfg_attr(not(debug_assertions), allow(unused_variables))]
 	fn tap_deref_mut_dbg<F, R>(self, func: F) -> Self
-	where Self: DerefMut, F: FnOnce(&mut <Self as Deref>::Target) -> R {
-		#[cfg(debug_assertions)] return self.tap_deref_mut(func);
-		#[cfg(not(debug_assertions))] return self;
+	where
+		Self: DerefMut,
+		F: FnOnce(&mut <Self as Deref>::Target) -> R,
+	{
+		#[cfg(debug_assertions)]
+		return self.tap_deref_mut(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 }
 
-impl<T: Sized> TapDeref for T {}
+impl<T: Sized> TapDeref for T {
+}
 
 /** Optional Tap
 
@@ -571,8 +651,10 @@ pub trait TapOption<T: Sized>: Sized {
 	/// Calls `tap_some` in debug builds, and does nothing in release builds.
 	#[allow(unused_variables)]
 	fn tap_some_dbg<F: FnOnce(&T) -> R, R>(self, func: F) -> Self {
-		#[cfg(debug_assertions)] return self.tap_some(func);
-		#[cfg(not(debug_assertions))] return self;
+		#[cfg(debug_assertions)]
+		return self.tap_some(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 
 	/// Provides the interior value for modification if present.
@@ -584,8 +666,10 @@ pub trait TapOption<T: Sized>: Sized {
 	/// builds.
 	#[allow(unused_variables)]
 	fn tap_some_mut_dbg<F: FnOnce(&mut T) -> R, R>(self, func: F) -> Self {
-		#[cfg(debug_assertions)] return self.tap_some_mut(func);
-		#[cfg(not(debug_assertions))] return self;
+		#[cfg(debug_assertions)]
+		return self.tap_some_mut(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 
 	/// Runs the provided function if the `Option` is empty.
@@ -596,22 +680,33 @@ pub trait TapOption<T: Sized>: Sized {
 	/// Calls `tap_none` in debug builds, and does nothing in release builds.
 	#[allow(unused_variables)]
 	fn tap_none_dbg<F: FnOnce() -> R, R>(self, func: F) -> Self {
-		#[cfg(debug_assertions)] return self.tap_none(func);
-		#[cfg(not(debug_assertions))] return self;
+		#[cfg(debug_assertions)]
+		return self.tap_none(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 }
 
 impl<T> TapOption<T> for Option<T> {
 	fn tap_some<F: FnOnce(&T) -> R, R>(self, func: F) -> Self {
-		if let Some(val) = self.as_ref() { func(val); } self
+		if let Some(val) = self.as_ref() {
+			func(val);
+		}
+		self
 	}
 
 	fn tap_some_mut<F: FnOnce(&mut T) -> R, R>(mut self, func: F) -> Self {
-		if let Some(val) = self.as_mut() { func(val); } self
+		if let Some(val) = self.as_mut() {
+			func(val);
+		}
+		self
 	}
 
 	fn tap_none<F: FnOnce() -> R, R>(self, func: F) -> Self {
-		if self.is_none() { func(); } self
+		if self.is_none() {
+			func();
+		}
+		self
 	}
 }
 
@@ -633,8 +728,10 @@ pub trait TapResult<T: Sized, E: Sized>: Sized {
 	/// Calls `tap_ok` in debug builds, and does nothing in release builds.
 	#[allow(unused_variables)]
 	fn tap_ok_dbg<F: FnOnce(&T) -> R, R>(self, func: F) -> Self {
-		#[cfg(debug_assertions)] return self.tap_ok(func);
-		#[cfg(not(debug_assertions))] return self;
+		#[cfg(debug_assertions)]
+		return self.tap_ok(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 
 	/// Provides the inner value for modification if the `Result` is `Ok`.
@@ -643,8 +740,10 @@ pub trait TapResult<T: Sized, E: Sized>: Sized {
 	/// Calls `tap_ok_mut` in debug builds, and does nothing in release builds.
 	#[allow(unused_variables)]
 	fn tap_ok_mut_dbg<F: FnOnce(&mut T) -> R, R>(self, func: F) -> Self {
-		#[cfg(debug_assertions)] return self.tap_ok_mut(func);
-		#[cfg(not(debug_assertions))] return self;
+		#[cfg(debug_assertions)]
+		return self.tap_ok_mut(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 
 	/// Provides the inner error value for inspection if the `Result` is `Err`.
@@ -653,36 +752,53 @@ pub trait TapResult<T: Sized, E: Sized>: Sized {
 	/// Calls `tap_err` in debug builds, and does nothing in release builds.
 	#[allow(unused_variables)]
 	fn tap_err_dbg<F: FnOnce(&E) -> R, R>(self, func: F) -> Self {
-		#[cfg(debug_assertions)] return self.tap_err(func);
-		#[cfg(not(debug_assertions))] return self;
+		#[cfg(debug_assertions)]
+		return self.tap_err(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 
-	/// Provides the inner error value for modification if the `Result` is `Err`.
+	/// Provides the inner error value for modification if the `Result` is
+	/// `Err`.
 	fn tap_err_mut<F: FnOnce(&mut E) -> R, R>(self, func: F) -> Self;
 
 	/// Calls `tap_err_mut` in debug builds, and does nothing in release builds.
 	#[allow(unused_variables)]
 	fn tap_err_mut_dbg<F: FnOnce(&mut E) -> R, R>(self, func: F) -> Self {
-		#[cfg(debug_assertions)] return self.tap_err_mut(func);
-		#[cfg(not(debug_assertions))] return self;
+		#[cfg(debug_assertions)]
+		return self.tap_err_mut(func);
+		#[cfg(not(debug_assertions))]
+		return self;
 	}
 }
 
 impl<T, E> TapResult<T, E> for Result<T, E> {
 	fn tap_ok<F: FnOnce(&T) -> R, R>(self, func: F) -> Self {
-		if let Ok(val) = self.as_ref() { func(val); } self
+		if let Ok(val) = self.as_ref() {
+			func(val);
+		}
+		self
 	}
 
 	fn tap_ok_mut<F: FnOnce(&mut T) -> R, R>(mut self, func: F) -> Self {
-		if let Ok(val) = self.as_mut() { func(val); } self
+		if let Ok(val) = self.as_mut() {
+			func(val);
+		}
+		self
 	}
 
 	fn tap_err<F: FnOnce(&E) -> R, R>(self, func: F) -> Self {
-		if let Err(err) = self.as_ref() { func(err); } self
+		if let Err(err) = self.as_ref() {
+			func(err);
+		}
+		self
 	}
 
 	fn tap_err_mut<F: FnOnce(&mut E) -> R, R>(mut self, func: F) -> Self {
-		if let Err(err) = self.as_mut() { func(err); } self
+		if let Err(err) = self.as_mut() {
+			func(err);
+		}
+		self
 	}
 }
 
@@ -703,8 +819,7 @@ mod tests {
 		use alloc::rc::Rc;
 
 		let mut len = 0;
-		let _ = Rc::<str>::from("hello")
-			.tap_borrow(|s: &str| len = s.len());
+		let _ = Rc::<str>::from("hello").tap_borrow(|s: &str| len = s.len());
 		assert_eq!(len, 5);
 
 		let v = alloc::vec![5i32, 1, 2, 4, 3]
@@ -746,10 +861,10 @@ mod tests {
 			a: [0, 1, 2, 3, 4, 5, 6, 7],
 			b: [8, 9, 10, 11],
 		}
-			.tap_ref(|a: &[u8]| sum_a = a.iter().sum())
-			.tap_ref(|b: &[u16]| sum_b = b.iter().sum())
-			.tap_ref_mut(|a: &mut [u8]| a.iter_mut().for_each(|e| *e *= 2))
-			.tap_ref_mut(|b: &mut [u16]| b.iter_mut().for_each(|e| *e *= 2));
+		.tap_ref(|a: &[u8]| sum_a = a.iter().sum())
+		.tap_ref(|b: &[u16]| sum_b = b.iter().sum())
+		.tap_ref_mut(|a: &mut [u8]| a.iter_mut().for_each(|e| *e *= 2))
+		.tap_ref_mut(|b: &mut [u16]| b.iter_mut().for_each(|e| *e *= 2));
 
 		assert_eq!(sum_a, 28);
 		assert_eq!(sum_b, 38);

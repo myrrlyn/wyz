@@ -38,7 +38,7 @@ All `Sized` types implement `Conv` by default, so specifying that a type must be
 
 Conversion with `.into()` will fail to compile, even with the type annotation:
 
-```rust,ignore
+```rust,compile_fail
 let s: String = "static".into().clone();
 //              ^^^^^^^^^^^^^^^ cannot infer type for `T`
 // note: type must be known at this point
@@ -56,7 +56,7 @@ let s = "static".conv::<String>().clone();
 Bounding a type with `Conv` will not compile, because the trait itself gives no
 information:
 
-```rust,ignore
+```rust,compile_fail
 # use wyz::conv::Conv;
 fn lift<T: Conv>(src: T) -> String {
   src.conv::<String>().clone()
@@ -98,12 +98,14 @@ pub trait Conv: Sized {
 	///
 	/// let t = "hello".conv::<String>();
 	/// ```
-	fn conv<T: Sized>(self) -> T where Self: Into<T> {
+	fn conv<T: Sized>(self) -> T
+	where Self: Into<T> {
 		<Self as Into<T>>::into(self)
 	}
 }
 
-impl<T: Sized> Conv for T {}
+impl<T: Sized> Conv for T {
+}
 
 /** Directed Fallible Type Conversion
 
@@ -198,9 +200,11 @@ pub trait TryConv: Sized {
 	///
 	/// let t = "hello".try_conv::<String>().unwrap();
 	/// ```
-	fn try_conv<T: Sized>(self) -> Result<T, Self::Error> where Self: TryInto<T> {
+	fn try_conv<T: Sized>(self) -> Result<T, Self::Error>
+	where Self: TryInto<T> {
 		<Self as TryInto<T>>::try_into(self)
 	}
 }
 
-impl<T: Sized> TryConv for T {}
+impl<T: Sized> TryConv for T {
+}

@@ -7,9 +7,9 @@ Each module has more documentation about what it contains. The modules are
 largely independent, and can be used individually.
 !*/
 
-#![deny(missing_docs)]
-
 #![no_std]
+#![cfg_attr(debug_assertions, warn(missing_docs))]
+#![cfg_attr(not(debug_assertions), deny(missing_docs))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -18,8 +18,8 @@ extern crate alloc;
 extern crate std;
 
 pub mod conv;
+pub mod fmt;
 pub mod pipe;
-pub mod pretty;
 pub mod tap;
 
 #[cfg(feature = "std")]
@@ -27,8 +27,8 @@ pub mod tap;
 pub mod exit;
 
 pub use conv::*;
+pub use fmt::*;
 pub use pipe::*;
-pub use pretty::*;
 pub use tap::*;
 
 #[cfg(feature = "std")]

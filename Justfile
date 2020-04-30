@@ -13,7 +13,7 @@ build: check
 	cargo build
 
 # Runs the checker and linter.
-check:
+check: format
 	cargo check
 	cargo clippy
 
@@ -21,13 +21,19 @@ check:
 clean:
 	cargo clean
 
+# Development workflow.
+dev: format check doc test
+
 # Documents the project, after checking that it is valid.
 doc: check
 	cargo doc --document-private-items
 
+format:
+	cargo +nightly fmt -- --config-path rustfmt-nightly.toml
+
 # Runs a Justfile recipe on every change to the workspace.
 loop action:
-	cargo watch -s "just {{action}}"
+	watchexec -- "just {{action}}"
 
 # Runs the project under the Miri interpreter. This is currently nightly-only.
 miri:

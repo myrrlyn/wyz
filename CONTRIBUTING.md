@@ -35,3 +35,11 @@ that do not immediately touch the codebase, you can reach me informally to talk
 about them or open an issue.
 
 I will do my best to respond to all contacts in a timely manner.
+
+## Workflow
+
+This project uses a `Justfile` to contain its workflows. You can install the
+`just` tool from Cargo (`cargo install just`), or from any of the sources listed
+at https://github.com/casey/just. If you run `just loop dev` in a separate
+terminal while you work, or run `just dev` as your editor’s on-save event, you
+should be all set.

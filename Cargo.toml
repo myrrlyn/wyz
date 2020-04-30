@@ -17,6 +17,10 @@ categories = [
 description = "myrrlyn’s utility collection"
 documentation = "https://docs.rs/wyz"
 homepage = "https://myrrlyn.net/crates/wyz"
+include = [
+	"Cargo.toml",
+	"src/**/*.rs",
+]
 keywords = [
 ]
 license = "MIT"
@@ -29,4 +33,5 @@ repository = "https://github.com/myrrlyn/wyz"
 
 [features]
 alloc = []
+default = ["std"]
 std = ["alloc"]

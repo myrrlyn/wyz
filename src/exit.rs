@@ -18,7 +18,8 @@ wyz::exit!(2);
 ```
 
 This example exits with status `3`, and uses `eprintln!` to print an error
-message before exiting.
+message before exiting. Note that if `stderr` has been closed, this will crash
+the program with a panic due to `SIGPIPE`, and *not* call `process::exit()`.
 
 ```rust,should_panic
 wyz::exit!(3, "Error status: {}", "testing");
@@ -33,17 +34,12 @@ macro_rules! exit {
 		$crate::exit!(1);
 	};
 
-	( $num:expr ) => {
+	( $num:expr $(,)? ) => {
 		::std::process::exit($num);
 	};
 
-	( $num:expr, $fmt:expr $( , $arg:expr )* ) => {{
-		let _: std::io::Result<()> = {
-			let err = std::io::stderr();
-			let mut err = err.lock();
-			writeln!(err, $fmt $( , $arg )*)?;
-			Ok(())
-		};
+	( $num:expr, $fmt:expr $( , $arg:expr )* $(,)? ) => {{
+		eprintln!($fmt $( , $arg )*);
 		$crate::exit!($num);
 	}};
 }

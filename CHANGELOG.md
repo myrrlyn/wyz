@@ -10,6 +10,11 @@ This document is written according to the [Keep a Changelog][kac] style.
 
 Added `conv::TryConv` for fallible directed conversion.
 
+Added `fmt` module, which supplies behavior to forward any formatting trait to
+`Debug`.
+
+Removed `pretty` module in favor of `fmt`.
+
 ### 0.1.1
 
 Fix typos.
