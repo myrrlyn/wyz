@@ -10,12 +10,12 @@ bench:
 
 # Build the project, after checking that it is valid.
 build: check
-	cargo build
+	cargo build --all-features
 
 # Runs the checker and linter.
 check: format
-	cargo check
-	cargo clippy
+	cargo check --all-features
+	cargo clippy --all-features
 
 # Destroys build artifacts.
 clean:
@@ -26,7 +26,7 @@ dev: format check doc test
 
 # Documents the project, after checking that it is valid.
 doc: check
-	cargo doc --document-private-items
+	cargo doc --document-private-items --all-features
 
 format:
 	cargo +nightly fmt -- --config-path rustfmt-nightly.toml
@@ -54,4 +54,4 @@ publish: test doc
 
 # Runs the test suite.
 test: build
-	cargo test
+	cargo test --all-features

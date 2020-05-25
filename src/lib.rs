@@ -22,6 +22,9 @@ pub mod fmt;
 pub mod pipe;
 pub mod tap;
 
+#[cfg(all(feature = "std", feature = "garbage"))]
+pub mod wm;
+
 #[cfg(feature = "std")]
 #[macro_use]
 pub mod exit;
@@ -33,3 +36,9 @@ pub use tap::*;
 
 #[cfg(feature = "std")]
 pub use exit::*;
+
+#[cfg(all(feature = "std", feature = "garbage"))]
+pub use wm::{
+	BgDrop,
+	BgDropExt,
+};

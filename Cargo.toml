@@ -6,7 +6,7 @@
 
 [package]
 name = "wyz"
-version = "0.2.0"
+version = "0.3.0"
 authors = [
 	"myrrlyn <self@myrrlyn.dev>",
 ]
@@ -31,7 +31,14 @@ repository = "https://github.com/myrrlyn/wyz"
 
 [dependencies]
 
+[dependencies.typemap]
+version = "0.3"
+optional = true
+
 [features]
 alloc = []
+garbage = [
+	"typemap",
+]
 default = ["std"]
 std = ["alloc"]
