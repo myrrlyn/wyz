@@ -33,6 +33,10 @@ repository = "https://github.com/myrrlyn/wyz"
 
 [dependencies]
 
+[dependencies.once_cell]
+version = "1"
+optional = true
+
 [dependencies.typemap]
 version = "0.3"
 optional = true
@@ -40,6 +44,7 @@ optional = true
 [features]
 alloc = []
 garbage = [
+	"once_cell",
 	"typemap",
 ]
 default = ["std"]

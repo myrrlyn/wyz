@@ -38,13 +38,14 @@ signal for each object not destroyed on its prior thread.
 
 use crate::pipe::Pipe;
 
+use once_cell::sync::OnceCell;
+
 use std::{
 	collections::VecDeque,
 	marker::PhantomData,
 	mem::{
 		self,
 		ManuallyDrop,
-		MaybeUninit,
 	},
 	ops::{
 		Deref,
@@ -217,16 +218,11 @@ pub trait BgDropExt: Sized + 'static {
 	/// ```
 	///
 	/// If you need to guarantee that your program remains open until all
-	/// deferred objects are destroyed, you can block on[ `wm::shutdown()`].
+	/// deferred objects are destroyed, you can block on [`wm::shutdown()`].
 	///
 	/// [`wm::shutdown()`]: ../fn.shutdown.html
 	fn bg_drop(self) -> BgDrop<Self> {
 		BgDrop::new(self)
-	}
-
-	/// Cancells the deferred-drop behavior of a value, returning it directly.
-	fn cancel(bg: BgDrop<Self>) -> Self {
-		bg.into_inner()
 	}
 }
 
@@ -258,16 +254,22 @@ function will be marked as deprecated on platforms where it is set.
 pub fn shutdown() {
 	static STOP: Once = Once::new();
 	STOP.call_once(|| {
-		//  Destroy the sender attached to the worker thread.
-		if let Some(mut chan) = unsafe { &*SEND.as_ptr() }.write().ok() {
-			*chan = None;
-		}
-		//  Grad the thread handle for the worker.
-		let _ = unsafe {
-			mem::replace(&mut JOIN, MaybeUninit::uninit()).assume_init()
-		}
-		//  And block until it exits.
-		.join();
+		//  Destroy the sender handle.
+		let _: Option<AssertThreadsafe<mpsc::Sender<Dtor>>> = SEND
+			.get()
+			//  Lock the write guard,
+			.and_then(|rw| rw.write().ok())
+			//  And remove the sender handle from it.
+			.and_then(|mut sender| sender.take());
+		//  Close the destructor thread.
+		let _: Option<()> = JOIN
+			.get()
+			//  Lock the thread’s mutex,
+			.and_then(|mx| mx.lock().ok())
+			//  Remove the handle from it,
+			.and_then(|mut mg| mg.take())
+			//  And await the thread’s termination.
+			.and_then(|jh| jh.join().ok());
 	});
 }
 
@@ -275,54 +277,49 @@ pub fn shutdown() {
 
 type Dtor = fn() -> ();
 
-static INIT: Once = Once::new();
-//  The sender is never used concurrently; it is always cloned.
-static mut SEND: MaybeUninit<
-	RwLock<Option<AssertThreadsafe<mpsc::Sender<Dtor>>>>,
-> = MaybeUninit::uninit();
+//  The sender is never used concurrently.
+static SEND: OnceCell<RwLock<Option<AssertThreadsafe<mpsc::Sender<Dtor>>>>> =
+	OnceCell::new();
 //  The map is only ever used behind a mutex lock.
-static mut DUMP: MaybeUninit<Mutex<AssertThreadsafe<TypeMap>>> =
-	MaybeUninit::uninit();
-static mut JOIN: MaybeUninit<thread::JoinHandle<()>> = MaybeUninit::uninit();
+static DUMP: OnceCell<Mutex<AssertThreadsafe<TypeMap>>> = OnceCell::new();
+static JOIN: OnceCell<Mutex<Option<thread::JoinHandle<()>>>> = OnceCell::new();
 
 /// Initialize the collection system.
 #[inline(never)]
 fn init() {
 	let (send, recv) = mpsc::channel::<Dtor>();
 
-	INIT.call_once(|| unsafe {
-		//  Establish a source sending channel. This must always be cloned
-		//  before used for transfer, and exists only to hold open the receiver.
-		SEND = AssertThreadsafe::new(send)
+	//  Establish a base sending channel. This holds the collector open until
+	//  `cancel()` is called.
+	SEND.get_or_init(|| {
+		send.pipe(AssertThreadsafe::new)
 			.pipe(Some)
 			.pipe(RwLock::new)
-			.pipe(MaybeUninit::new);
-		/* Establish a separate transfer queue for each type being sent. This
-		has an advantage over sending boxed objects over the channel in that
-		the memory used to hold enqueued objects is persisted across individual
-		object transfers, rather than requiring an allocator call at each entry
-		into and exit out of the transfer pipe.
-		*/
-		DUMP = AssertThreadsafe::new(TypeMap::new())
-			.pipe(Mutex::new)
-			.pipe(MaybeUninit::new);
-		//  Kick off the collector thread, which will wait for the signal pipe
-		//  to exit, and then deällocate the transfer map.
-		JOIN = thread::spawn(move || {
+	});
+
+	//  Establish a transfer queue for all types.
+	DUMP.get_or_init(|| {
+		TypeMap::new().pipe(AssertThreadsafe::new).pipe(Mutex::new)
+	});
+
+	//  Start the collector thread.
+	JOIN.get_or_init(|| {
+		thread::spawn(move || {
 			while let Ok(ev) = recv.recv() {
 				(ev)()
 			}
-			mem::replace(&mut **dq(), TypeMap::new());
+			let _ = mem::replace(&mut **dq(), TypeMap::new());
 		})
-		.pipe(MaybeUninit::new);
-
-		//  TODO(myrrlyn): Register `atexit` handler to block on the collector.
+		.pipe(Some)
+		.pipe(Mutex::new)
 	});
+
+	//  TODO(myrrlyn): Register an `atexit` handler to run `shutdown()`.
 }
 
 /// Lock the transfer map.
 fn dq() -> MutexGuard<'static, AssertThreadsafe<TypeMap>> {
-	unsafe { &*DUMP.as_ptr() }
+	unsafe { DUMP.get_unchecked() }
 		.lock()
 		.expect("Collection buffer should never observe a panic")
 }
@@ -332,9 +329,9 @@ fn dtor<T: 'static>() {
 	//  Binding a value causes it to drop *after* any temporaries created in its
 	//  construction.
 	let _tmp = dq()
-//  View the deque containing objects of this type.
+		//  View the deque containing objects of this type.
 		.get_mut::<Key<T>>()
-//  And pop the front value in the queue. It is acceptable to fail.
+		//  And pop the front value in the queue. It is acceptable to fail.
 		.and_then(VecDeque::pop_front);
 	//  The mutex lock returned by `dq()` drops immediately after the semicolon,
 	//  and the `_tmp` binding drops immediately before the terminating brace.
@@ -343,14 +340,14 @@ fn dtor<T: 'static>() {
 /// Get a local copy of the sender, free of threading concerns.
 fn sender() -> Option<mpsc::Sender<Dtor>> {
 	//  `sender` is only called after `SEND` is initialized
-	unsafe{ &*SEND.as_ptr() }
-//  Quit if the send channel could not be opened for reading
+	unsafe { SEND.get_unchecked() }
+		//  Quit if the send channel could not be opened for reading
 		.read()
 		.ok()?
-//  or if it contains `None`
+		//  or if it contains `None`
 		.as_ref()?
 		.inner
-//  and copy the sender into the local thread.
+		//  and copy the sender into the local thread.
 		.clone()
 		.pipe(Some)
 }
@@ -402,13 +399,14 @@ struct AssertThreadsafe<T> {
 }
 
 impl<T> AssertThreadsafe<T> {
-	unsafe fn new(inner: T) -> Self {
+	fn new(inner: T) -> Self {
 		Self { inner }
 	}
 }
 
 unsafe impl<T> Send for AssertThreadsafe<T> {
 }
+
 unsafe impl<T> Sync for AssertThreadsafe<T> {
 }
 
@@ -453,9 +451,11 @@ mod tests {
 		let kept = Deferrer(|| {
 			COUNTER.fetch_add(1, Relaxed);
 		});
-		let sent = BgDrop::new(Deferrer(|| {
+		let sent = Deferrer(|| {
 			COUNTER.fetch_add(1, Relaxed);
-		}));
+		})
+		.bg_drop();
+
 		drop(kept);
 		drop(sent);
 
