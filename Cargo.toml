@@ -19,6 +19,8 @@ documentation = "https://docs.rs/wyz"
 homepage = "https://myrrlyn.net/crates/wyz"
 include = [
 	"Cargo.toml",
+	"LICENSE.txt",
+	"README.md",
 	"src/**/*.rs",
 ]
 keywords = [
