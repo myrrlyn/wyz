@@ -166,7 +166,7 @@ use wyz::tap::Tap;
 let result = complex_value()
   .tap(|v| log::info!("First stage: {}", v))
   .transform(other, args)
-  .tap(|v| lo::info!("Second stage: {}", v));
+  .tap(|v| log::info!("Second stage: {}", v));
 ```
 
 The tap calls have no effect on the expression into which they are placed,
