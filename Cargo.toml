@@ -37,6 +37,9 @@ repository = "https://github.com/myrrlyn/wyz"
 version = "1"
 optional = true
 
+[dependencies.tap]
+version = "1"
+
 [dependencies.typemap]
 version = "0.3"
 optional = true

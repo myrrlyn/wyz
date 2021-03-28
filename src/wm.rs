@@ -36,9 +36,9 @@ signal for each object not destroyed on its prior thread.
 
 #![cfg(all(feature = "std", feature = "garbage"))]
 
-use crate::pipe::Pipe;
-
 use once_cell::sync::OnceCell;
+
+use tap::Pipe;
 
 use std::{
 	collections::VecDeque,

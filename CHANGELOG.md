@@ -20,6 +20,8 @@ future deferred-drop objects are destroyed in their local thread as normal.
 This system allows programs to opt in to faster immediate behavior when a value
 goes out of scope, with minimal system and per-value cost.
 
+Removed `tap`, `pipe`, and `conv`. They have been promoted to the [`tap`] crate.
+
 ### 0.2.0
 
 Added `conv::TryConv` for fallible directed conversion.
@@ -42,3 +44,5 @@ Initial release, featuring:
 - `pipe`
 - `pretty`
 - `tap`
+
+[`tap`]: https://crates.io/crates/tap

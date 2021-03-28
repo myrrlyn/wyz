@@ -17,10 +17,7 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-pub mod conv;
 pub mod fmt;
-pub mod pipe;
-pub mod tap;
 
 #[cfg(all(feature = "std", feature = "garbage"))]
 pub mod wm;
@@ -29,10 +26,7 @@ pub mod wm;
 #[macro_use]
 pub mod exit;
 
-pub use conv::*;
 pub use fmt::*;
-pub use pipe::*;
-pub use tap::*;
 
 #[cfg(feature = "std")]
 pub use exit::*;
