@@ -6,6 +6,11 @@ This document is written according to the [Keep a Changelog][kac] style.
 
 ## 0
 
+### 0.4.0
+
+Add the `comu` module containing the type-system mutability tracking extracted
+from `bitvec`.
+
 ### 0.3.0
 
 Added a background garbage disposal system in the `wm` module, under the
