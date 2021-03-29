@@ -139,10 +139,39 @@ where M: Mutability
 	/// Constructs a new `Address` over some pointer value.
 	///
 	/// You are responsible for selecting the correct `Mutability` marker.
+	#[inline(always)]
 	pub fn new(addr: NonNull<T>) -> Self {
 		Self {
 			inner: addr,
 			comu: M::SELF,
+		}
+	}
+
+	/// Permanently converts an `Address<_>` into an `Address<Const>`.
+	///
+	/// You should generally prefer [`Address::freeze`].
+	#[inline(always)]
+	pub fn immut(self) -> Address<Const, T> {
+		Address {
+			inner: self.inner,
+			..Address::DANGLING
+		}
+	}
+
+	/// Force an `Address<Const>` to be `Address<Mut>`.
+	///
+	/// # Safety
+	///
+	/// You should only call this on addresses you know to have been created
+	/// with `Mut`able permissions and previously removed by [`Address::immut`].
+	///
+	/// You should prefer using [`Address::freeze`] for temporary, trackable,
+	/// immutability constraints instead.
+	#[inline(always)]
+	pub unsafe fn assert_mut(self) -> Address<Mut, T> {
+		Address {
+			inner: self.inner,
+			..Address::DANGLING
 		}
 	}
 
@@ -153,16 +182,6 @@ where M: Mutability
 		Address {
 			inner,
 			comu: comu.freeze(),
-		}
-	}
-
-	/// Thaws the `Address` to its original mutability permission.
-	#[inline(always)]
-	pub fn thaw(addr: Address<Frozen<M>, T>) -> Self {
-		let Address { inner, comu } = addr;
-		Self {
-			inner,
-			comu: Mutability::thaw(comu),
 		}
 	}
 
@@ -177,6 +196,12 @@ where M: Mutability
 	/// # Panics
 	///
 	/// This panics if the result of applying the offset is the null pointer.
+	///
+	/// # Safety
+	///
+	/// See [`pointer::offset`].
+	///
+	/// [`pointer::offset`]: https://doc.rust-lang.org/std/primitive.pointer.html#method.offset
 	#[inline]
 	pub unsafe fn offset(mut self, count: isize) -> Self {
 		self.inner = self
@@ -221,25 +246,6 @@ where M: Mutability
 	}
 }
 
-impl<T> Address<Const, T> {
-	/// Force an `Address<Const>` to be `Address<Mut>`.
-	///
-	/// # Safety
-	///
-	/// You should only call this on addresses you know to have been created
-	/// with `Mut`able permissions and previously removed by [`Address::immut`].
-	///
-	/// You should prefer using [`Address::freeze`] for temporary, trackable,
-	/// immutability constraints instead.
-	#[inline(always)]
-	pub unsafe fn assert_mut(self) -> Address<Mut, T> {
-		Address {
-			inner: self.inner,
-			..Address::DANGLING
-		}
-	}
-}
-
 impl<T> Address<Mut, T> {
 	/// Gets the address as a write-capable pointer.
 	#[inline(always)]
@@ -247,13 +253,18 @@ impl<T> Address<Mut, T> {
 	pub fn to_mut(self) -> *mut T {
 		self.inner.as_ptr()
 	}
+}
 
-	/// Permanently converts an `Address<Mut>` into an `Address<Const>`.
+impl<M, T> Address<Frozen<M>, T>
+where M: Mutability
+{
+	/// Thaws the `Address` to its original mutability permission.
 	#[inline(always)]
-	pub fn immut(self) -> Address<Const, T> {
+	pub fn thaw(self) -> Address<M, T> {
+		let Self { inner, comu } = self;
 		Address {
-			inner: self.inner,
-			..Address::DANGLING
+			inner,
+			comu: Mutability::thaw(comu),
 		}
 	}
 }
@@ -274,17 +285,14 @@ impl<T> TryFrom<*const T> for Address<Const, T> {
 	fn try_from(elem: *const T) -> Result<Self, Self::Error> {
 		NonNull::new(elem as *mut T)
 			.ok_or(NullPtrError)
-			.map(|inner| Self { inner, comu: Const })
+			.map(Self::new)
 	}
 }
 
 impl<T> From<&T> for Address<Const, T> {
 	#[inline(always)]
 	fn from(elem: &T) -> Self {
-		Self {
-			inner: unsafe { NonNull::new_unchecked(elem as *const T as *mut T) },
-			comu: Const,
-		}
+		Self::new(elem.into())
 	}
 }
 
@@ -293,19 +301,14 @@ impl<T> TryFrom<*mut T> for Address<Mut, T> {
 
 	#[inline(always)]
 	fn try_from(elem: *mut T) -> Result<Self, Self::Error> {
-		NonNull::new(elem)
-			.ok_or(NullPtrError)
-			.map(|inner| Self { inner, comu: Mut })
+		NonNull::new(elem).ok_or(NullPtrError).map(Self::new)
 	}
 }
 
 impl<T> From<&mut T> for Address<Mut, T> {
 	#[inline(always)]
 	fn from(elem: &mut T) -> Self {
-		Self {
-			inner: elem.into(),
-			comu: Mut,
-		}
+		Self::new(elem.into())
 	}
 }
 
@@ -383,6 +386,7 @@ impl<M, T> Copy for Address<M, T> where M: Mutability
 pub struct NullPtrError;
 
 impl Display for NullPtrError {
+	#[inline]
 	fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
 		write!(fmt, "wyz::Address cannot contain a null pointer")
 	}
