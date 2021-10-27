@@ -6,6 +6,20 @@ This document is written according to the [Keep a Changelog][kac] style.
 
 ## 0
 
+### 0.5.0
+
+Added the `Bidi` iterator adapter, which applies a `.rev()` on construction if a
+given condition is true.
+
+Added the `RangeExt` trait for making some operations on
+`<R: RangeBounds<usize>>` easier.
+
+Added a `FmtList` type (and `.fmt_list()` method) which allows anything that can
+be borrowed as an iterator to render itself conveniently.
+
+Added more pointer methods to `Address`, and created a system for working with
+references as well as pointers.
+
 ### 0.4.0
 
 Add the `comu` module containing the type-system mutability tracking extracted
