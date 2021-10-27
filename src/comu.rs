@@ -22,7 +22,9 @@ use core::{
 		Hash,
 		Hasher,
 	},
+	ops::Deref,
 	ptr::NonNull,
+	slice,
 };
 
 use tap::Pipe;
@@ -492,6 +494,122 @@ where
 	M: Mutability,
 	T: ?Sized,
 {
+}
+
+/// Allows an `Address` to produce an ordinary reference.
+pub trait Referential<'a>: self::seal::Sealed {
+	/// The created reference type. Must be one of `&T` or `&mut T`.
+	type Ref: 'a + Deref;
+
+	/// Converts the `Address` to a reference.
+	///
+	/// ## Safety
+	///
+	/// The caller is responsible for ensuring that the memory location that the
+	/// `Address` describes contains an initialized value, and that the produced
+	/// reference abides by the Rust `&`/`&mut` exclusion rules.
+	unsafe fn to_ref(self) -> Self::Ref;
+
+	/// Converts a reference back into an `Address`.
+	fn from_ref(this: Self::Ref) -> Self;
+}
+
+impl<'a, T> Referential<'a> for Address<Const, T>
+where T: 'a + ?Sized
+{
+	type Ref = &'a T;
+
+	unsafe fn to_ref(self) -> Self::Ref {
+		self.inner.as_ref()
+	}
+
+	fn from_ref(this: Self::Ref) -> Self {
+		this.into()
+	}
+}
+
+impl<'a, T> Referential<'a> for Address<Mut, T>
+where T: 'a + ?Sized
+{
+	type Ref = &'a mut T;
+
+	unsafe fn to_ref(mut self) -> Self::Ref {
+		self.inner.as_mut()
+	}
+
+	fn from_ref(this: Self::Ref) -> Self {
+		this.into()
+	}
+}
+
+impl<'a, M, T> Referential<'a> for Address<Frozen<M>, T>
+where
+	M: Mutability,
+	T: 'a + ?Sized,
+{
+	type Ref = &'a T;
+
+	unsafe fn to_ref(self) -> Self::Ref {
+		self.inner.as_ref()
+	}
+
+	fn from_ref(this: Self::Ref) -> Self {
+		Self::new(NonNull::from(this))
+	}
+}
+
+/// A generically-mutable reference.
+pub type Reference<'a, M, T> = <Address<M, T> as Referential<'a>>::Ref;
+
+/// Allows an `Address<M, [T]>` to produce an ordinary slice reference.
+pub trait SliceReferential<'a>: Referential<'a> + self::seal::Sealed {
+	/// The type of the element pointer.
+	type ElementAddr;
+
+	/// Constructs an ordinary slice reference from a base-address and a length.
+	///
+	/// ## Parameters
+	///
+	/// - `ptr`: The address of the base element in the slice.
+	/// - `len`: The number of elements, beginning at `ptr`, in the slice.
+	///
+	/// ## Safety
+	///
+	/// The base address and the element count must describe a valid region of
+	/// memory.
+	unsafe fn from_raw_parts(ptr: Self::ElementAddr, len: usize) -> Self::Ref;
+}
+
+impl<'a, T> SliceReferential<'a> for Address<Const, [T]>
+where T: 'a
+{
+	type ElementAddr = Address<Const, T>;
+
+	unsafe fn from_raw_parts(ptr: Self::ElementAddr, len: usize) -> Self::Ref {
+		slice::from_raw_parts(ptr.to_const(), len)
+	}
+}
+
+impl<'a, M, T> SliceReferential<'a> for Address<Frozen<M>, [T]>
+where
+	M: Mutability,
+	T: 'a,
+{
+	type ElementAddr = Address<Frozen<M>, T>;
+
+	unsafe fn from_raw_parts(ptr: Self::ElementAddr, len: usize) -> Self::Ref {
+		slice::from_raw_parts(ptr.to_const(), len)
+	}
+}
+
+impl<'a, T> SliceReferential<'a> for Address<Mut, [T]>
+where T: 'a
+{
+	type ElementAddr = Address<Mut, T>;
+
+	unsafe fn from_raw_parts(ptr: Self::ElementAddr, len: usize) -> Self::Ref {
+		slice::from_raw_parts_mut(ptr.to_mut(), len)
+	}
 }
 
 /// [`Address`] cannot be constructed over null pointers.
