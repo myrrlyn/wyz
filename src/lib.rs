@@ -20,6 +20,7 @@ extern crate std;
 pub mod bidi;
 pub mod comu;
 pub mod fmt;
+pub mod range;
 
 #[cfg(all(feature = "std", feature = "garbage"))]
 pub mod wm;
@@ -28,14 +29,18 @@ pub mod wm;
 #[macro_use]
 pub mod exit;
 
-pub use comu::*;
-pub use fmt::*;
+pub use self::{
+	bidi::*,
+	comu::*,
+	fmt::*,
+	range::*,
+};
 
 #[cfg(feature = "std")]
-pub use exit::*;
+pub use self::exit::*;
 
 #[cfg(all(feature = "std", feature = "garbage"))]
-pub use wm::{
+pub use self::wm::{
 	BgDrop,
 	BgDropExt,
 };
