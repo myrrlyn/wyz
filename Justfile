@@ -29,7 +29,7 @@ doc: check
 	cargo doc --document-private-items --all-features
 
 format:
-	cargo +nightly fmt -- --config-path rustfmt-nightly.toml
+	cargo +nightly fmt
 
 # Runs a Justfile recipe on every change to the workspace.
 loop action:
