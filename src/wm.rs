@@ -12,26 +12,27 @@ there is only one worker thread to receive all such objects, you could say that
 the worker *collects* them. Wink wink, nudge nudge.
 
 Users need only wrap their values in `BgDrop` to have their garbage collected.
-`BgDrop` only accepts `'static` values, since the values are being sent to
-another thread that makes no guarantees about timeliness of destruction, and
+`BgDrop` only accepts `'static + Send` values, since the values are being sent
+to another thread that makes no guarantees about timeliness of destruction, and
 thus the garbage cannot have any lingering ties to live objects in the rest of
 the program.
 
-When a `BgDrop` goes out of scope, it attempts to send its interior value to the
+When a `BgDrop` goes out of scope, it attempts to send its wrapped value to the
 collector thread. The first `BgDrop` to drop must start the collector thread,
 which may result in an indefinite block until the thread begins. Once the
 collector is running, all `BgDrop` drops will *attempt* to send their internal
 value to the collector for destruction. If the send fails, then the value will
 be dropped on the sending thread, rather than on the collector.
 
-You can prevent future collections with `cancel_collection()`, which destroys
-the channel used to move values to the collector thread. You can also get the
-thread key for the collector with `collector()`. If you need to ensure that all
-pending destructions occur before program exit, you should end your program with
-a `cancel_collection()` and then `collector().unwrap().join()`. The collector
-guarantees that objects queued for destruction are either enqueued for future
-destruction *or* destroyed immediately, so the collector thread *will* receive a
-signal for each object not destroyed on its prior thread.
+You can prevent future collections with [`shutdown()`], which destroys the
+channel used to move values to the collector thread. If you need to ensure that
+all pending destructions occur before program exit, you should end your program
+with a call to `shutdown()`. The collector guarantees that objects queued for
+destruction are either enqueued for future destruction *or* destroyed
+immediately, so the collector thread *will* receive a signal for each object not
+destroyed on its prior thread.
+
+[`shutdown()`]: self::shutdown
 !*/
 
 #![cfg(all(feature = "std", feature = "garbage"))]
@@ -41,6 +42,10 @@ use once_cell::sync::OnceCell;
 use tap::Pipe;
 
 use std::{
+	borrow::{
+		Borrow,
+		BorrowMut,
+	},
 	collections::VecDeque,
 	marker::PhantomData,
 	mem::{
@@ -77,17 +82,17 @@ compiler’s static lifetime analyzer.
 All `BgDrop` types use the same persistent worker thread, minimizing the program
 cost of deferral.
 
-If the function [`wm::shutdown()`] is called, all future `BgDrop`s become a noöp
-and run their contained destructors on their local threads.
+If the function [`wm::shutdown()`] is called, all future `BgDrop`s revert to
+running the destructor in-place.
 
-[`wm::shutdown()`]: ../fn.shutdown.html
+[`wm::shutdown()`]: crate::wm::shutdown
 **/
 #[repr(transparent)]
-pub struct BgDrop<T: 'static> {
+pub struct BgDrop<T: 'static + Send> {
 	inner: ManuallyDrop<T>,
 }
 
-impl<T: 'static> BgDrop<T> {
+impl<T: 'static + Send> BgDrop<T> {
 	/// Instructs an object to run its destructor in the background.
 	///
 	/// This function modifies the wrapped object’s `Drop` implementation to try
@@ -123,9 +128,48 @@ impl<T: 'static> BgDrop<T> {
 	pub fn bg_drop(self) -> Self {
 		self
 	}
+}
 
-	#[inline(always)]
-	fn dtor(&mut self) {
+impl<T: 'static + Send> Borrow<T> for BgDrop<T> {
+	fn borrow(&self) -> &T {
+		&*self.inner
+	}
+}
+
+impl<T: 'static + Send> BorrowMut<T> for BgDrop<T> {
+	fn borrow_mut(&mut self) -> &mut T {
+		&mut *self.inner
+	}
+}
+
+impl<T: 'static + Send> AsRef<T> for BgDrop<T> {
+	fn as_ref(&self) -> &T {
+		&*self.inner
+	}
+}
+
+impl<T: 'static + Send> AsMut<T> for BgDrop<T> {
+	fn as_mut(&mut self) -> &mut T {
+		&mut *self.inner
+	}
+}
+
+impl<T: 'static + Send> Deref for BgDrop<T> {
+	type Target = T;
+
+	fn deref(&self) -> &Self::Target {
+		&*self.inner
+	}
+}
+
+impl<T: 'static + Send> DerefMut for BgDrop<T> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut *self.inner
+	}
+}
+
+impl<T: 'static + Send> Drop for BgDrop<T> {
+	fn drop(&mut self) {
 		//  No destructor, no problem! Quit.
 		if !mem::needs_drop::<T>() {
 			return;
@@ -134,7 +178,7 @@ impl<T: 'static> BgDrop<T> {
 		//  Ensure that the collector has been initialized.
 		init();
 
-		//  Pull the value into local scope, reärming the destructor.
+		//  Pull the value into local scope, reärming its destructor.
 		let val = unsafe { ManuallyDrop::take(&mut self.inner) };
 
 		//  Get a local copy of the outbound channel, or exit.
@@ -146,7 +190,7 @@ impl<T: 'static> BgDrop<T> {
 		//  Enqueue the object into the transfer buffer.
 		dq().entry::<Key<T>>()
 			.or_insert_with(VecDeque::new)
-			.pipe(|v| v.push_back(val));
+			.push_back(val);
 
 		//  Send the dequeueïng destructor to the collector thread, or run it
 		//  locally if the send failed.
@@ -156,40 +200,8 @@ impl<T: 'static> BgDrop<T> {
 	}
 }
 
-impl<T: 'static> AsRef<T> for BgDrop<T> {
-	fn as_ref(&self) -> &T {
-		&*self.inner
-	}
-}
-
-impl<T: 'static> AsMut<T> for BgDrop<T> {
-	fn as_mut(&mut self) -> &mut T {
-		&mut *self.inner
-	}
-}
-
-impl<T: 'static> Deref for BgDrop<T> {
-	type Target = T;
-
-	fn deref(&self) -> &Self::Target {
-		&*self.inner
-	}
-}
-
-impl<T: 'static> DerefMut for BgDrop<T> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut *self.inner
-	}
-}
-
-impl<T: 'static> Drop for BgDrop<T> {
-	fn drop(&mut self) {
-		self.dtor();
-	}
-}
-
 /// Attaches a `BgDrop` constructor to all suitable types.
-pub trait BgDropExt: Sized + 'static {
+pub trait BgDropExt: 'static + Send + Sized {
 	/// Modifies the object’s destructor to run in the background.
 	///
 	/// When this value goes out of scope, it will attempt to send itself to a
@@ -220,13 +232,14 @@ pub trait BgDropExt: Sized + 'static {
 	/// If you need to guarantee that your program remains open until all
 	/// deferred objects are destroyed, you can block on [`wm::shutdown()`].
 	///
-	/// [`wm::shutdown()`]: ../fn.shutdown.html
+	/// [`wm::shutdown()`]: crate::wm::shutdown
+	#[inline(always)]
 	fn bg_drop(self) -> BgDrop<Self> {
 		BgDrop::new(self)
 	}
 }
 
-impl<T: Sized + 'static> BgDropExt for T {
+impl<T: 'static + Send + Sized> BgDropExt for T {
 }
 
 /** Stop the background disposal system.
@@ -248,7 +261,7 @@ function is called, the program will never run deferred disposal again.
 Rust does not provide a portable `atexit` behavior, so you are responsible for
 calling this before your program terminates if you want to ensure that all
 deferred destructions actually take place. Future versions of this library may
-register `wm::shutdown()` with the sytem `atexit` handler. If this occurs, the
+register `wm::shutdown()` with the system `atexit` handler. If this occurs, the
 function will be marked as deprecated on platforms where it is set.
 **/
 pub fn shutdown() {
@@ -277,7 +290,7 @@ pub fn shutdown() {
 
 type Dtor = fn() -> ();
 
-//  The sender is never used concurrently.
+//  This sender is never used directly; it is always cloned before use.
 static SEND: OnceCell<RwLock<Option<AssertThreadsafe<mpsc::Sender<Dtor>>>>> =
 	OnceCell::new();
 //  The map is only ever used behind a mutex lock.
@@ -290,7 +303,7 @@ fn init() {
 	let (send, recv) = mpsc::channel::<Dtor>();
 
 	//  Establish a base sending channel. This holds the collector open until
-	//  `cancel()` is called.
+	//  `shutdown()` is called.
 	SEND.get_or_init(|| {
 		send.pipe(AssertThreadsafe::new)
 			.pipe(Some)
@@ -308,6 +321,8 @@ fn init() {
 			while let Ok(ev) = recv.recv() {
 				(ev)()
 			}
+			//  When the channel closes, yank the transfer map and destroy it.
+			//  This destroys each transfer queue and each enqueued object.
 			let _ = mem::replace(&mut **dq(), TypeMap::new());
 		})
 		.pipe(Some)
@@ -325,7 +340,7 @@ fn dq() -> MutexGuard<'static, AssertThreadsafe<TypeMap>> {
 }
 
 /// Pull the front object out of a typed queue, and destroy it.
-fn dtor<T: 'static>() {
+fn dtor<T: 'static + Send>() {
 	//  Binding a value causes it to drop *after* any temporaries created in its
 	//  construction.
 	let _tmp = dq()
@@ -353,9 +368,9 @@ fn sender() -> Option<mpsc::Sender<Dtor>> {
 }
 
 /// Look up a type’s location in the transfer map.
-struct Key<T: 'static>(PhantomData<T>);
+struct Key<T: 'static + Send>(PhantomData<T>);
 
-impl<T: 'static> typemap::Key for Key<T> {
+impl<T: 'static + Send> typemap::Key for Key<T> {
 	/// The transfer map holds some form of collection of the transferred types.
 	///
 	/// The specific collection type is irrelevant, as long as it supports both
@@ -367,7 +382,7 @@ impl<T: 'static> typemap::Key for Key<T> {
 	/// If Rust were to allow a construction like
 	///
 	/// ```rust,ignore
-	/// fn type_chan<T: 'static>() -> (
+	/// fn type_chan<T: 'static + Send>() -> (
 	///   &'static mpsc::Sender<T>,
 	///   &'static mpsc::Receiver<T>,
 	/// ) {
@@ -389,7 +404,7 @@ impl<T: 'static> typemap::Key for Key<T> {
 /** Get off my back, `rustc`.
 
 This is required because `static` vars must be `Sync`, and the thread-safety
-wrappers in use apparently inherit the `Sync`hronicity of their wrapped types.
+wrappers in use apparently inherit the `Sync` status of their wrapped types.
 This module uses them correctly, and does not permit escape, so this struct is
 needed to get the compiler to accept our use.
 **/
@@ -399,7 +414,7 @@ struct AssertThreadsafe<T> {
 }
 
 impl<T> AssertThreadsafe<T> {
-	fn new(inner: T) -> Self {
+	const fn new(inner: T) -> Self {
 		Self { inner }
 	}
 }

@@ -37,6 +37,19 @@ use core::{
 #[cfg(not(tarpaulin_include))]
 pub trait FmtForward: Sized {
 	/// Causes `self` to use its `Binary` implementation when `Debug`-formatted.
+	///
+	/// ## Examples
+	///
+	/// ```rust
+	/// # #[cfg(feature = "std")] {
+	/// use wyz::fmt::*;
+	///
+	/// assert_eq!(
+	///   format!("{:?}", 3.fmt_binary()),
+	///   "11",
+	/// );
+	/// # }
+	/// ```
 	#[inline(always)]
 	fn fmt_binary(self) -> FmtBinary<Self>
 	where Self: Binary {
@@ -45,6 +58,29 @@ pub trait FmtForward: Sized {
 
 	/// Causes `self` to use its `Display` implementation when
 	/// `Debug`-formatted.
+	///
+	/// ## Examples
+	///
+	/// ```rust
+	/// # #[cfg(feature = "std")] {
+	/// use wyz::fmt::*;
+	///
+	/// let text = "hello,
+	/// world!";
+	/// assert_eq!(
+	///   format!("{:?}", text),
+	///   r#""hello,\nworld!""#,
+	///   // the render contains the sequence U+005C REVERSE SOLIDUS,
+	///   // then U+006E LATIN SMALL LETTER N, *not* U+000A LINE FEED.
+	/// );
+	/// assert_eq!(
+	///   format!("{:?}", text.fmt_display()),
+	///   "hello,\nworld!",
+	///   // the render does not have wrapping quotes, and
+	///   // the newline is printed directly, not escaped.
+	/// );
+	/// # }
+	/// ```
 	#[inline(always)]
 	fn fmt_display(self) -> FmtDisplay<Self>
 	where Self: Display {
@@ -53,6 +89,19 @@ pub trait FmtForward: Sized {
 
 	/// Causes `self` to use its `LowerExp` implementation when
 	/// `Debug`-formatted.
+	///
+	/// ## Examples
+	///
+	/// ```rust
+	/// # #[cfg(feature = "std")] {
+	/// use wyz::fmt::*;
+	///
+	/// assert_eq!(
+	///   format!("{:?}", (31.4).fmt_lower_exp()),
+	///   "3.14e1",
+	/// );
+	/// # }
+	/// ```
 	#[inline(always)]
 	fn fmt_lower_exp(self) -> FmtLowerExp<Self>
 	where Self: LowerExp {
@@ -61,6 +110,19 @@ pub trait FmtForward: Sized {
 
 	/// Causes `self` to use its `LowerHex` implementation when
 	/// `Debug`-formatted.
+	///
+	/// ## Examples
+	///
+	/// ```rust
+	/// # #[cfg(feature = "std")] {
+	/// use wyz::fmt::*;
+	///
+	/// assert_eq!(
+	///   format!("{:?}", 44203.fmt_lower_hex()),
+	///   "acab",
+	/// );
+	/// # }
+	/// ```
 	#[inline(always)]
 	fn fmt_lower_hex(self) -> FmtLowerHex<Self>
 	where Self: LowerHex {
@@ -68,6 +130,19 @@ pub trait FmtForward: Sized {
 	}
 
 	/// Causes `self` to use its `Octal` implementation when `Debug`-formatted.
+	///
+	/// ## Examples
+	///
+	/// ```rust
+	/// # #[cfg(feature = "std")] {
+	/// use wyz::fmt::*;
+	///
+	/// assert_eq!(
+	///   format!("{:?}", 493.fmt_octal()),
+	///   "755",
+	/// );
+	/// # }
+	/// ```
 	#[inline(always)]
 	fn fmt_octal(self) -> FmtOctal<Self>
 	where Self: Octal {
@@ -76,6 +151,19 @@ pub trait FmtForward: Sized {
 
 	/// Causes `self` to use its `Pointer` implementation when
 	/// `Debug`-formatted.
+	///
+	/// ## Examples
+	///
+	/// ```rust
+	/// # #[cfg(feature = "std")] {
+	/// use wyz::fmt::*;
+	///
+	/// let val = 6;
+	/// let addr = &val as *const i32;
+	/// println!("{:?}", addr.fmt_pointer());
+	/// // prints a memory address.
+	/// # }
+	/// ```
 	#[inline(always)]
 	fn fmt_pointer(self) -> FmtPointer<Self>
 	where Self: Pointer {
@@ -84,6 +172,19 @@ pub trait FmtForward: Sized {
 
 	/// Causes `self` to use its `UpperExp` implementation when
 	/// `Debug`-formatted.
+	///
+	/// ## Examples
+	///
+	/// ```rust
+	/// # #[cfg(feature = "std")] {
+	/// use wyz::fmt::*;
+	///
+	/// assert_eq!(
+	///   format!("{:?}", (62.8).fmt_upper_exp()),
+	///   "6.28E1",
+	/// );
+	/// # }
+	/// ```
 	#[inline(always)]
 	fn fmt_upper_exp(self) -> FmtUpperExp<Self>
 	where Self: UpperExp {
@@ -92,6 +193,19 @@ pub trait FmtForward: Sized {
 
 	/// Causes `self` to use its `UpperHex` implementation when
 	/// `Debug`-formatted.
+	///
+	/// ## Examples
+	///
+	/// ```rust
+	/// # #[cfg(feature = "std")] {
+	/// use wyz::fmt::*;
+	///
+	/// assert_eq!(
+	///   format!("{:?}", 55322.fmt_upper_hex()),
+	///   "D81A",
+	/// );
+	/// # }
+	/// ```
 	#[inline(always)]
 	fn fmt_upper_hex(self) -> FmtUpperHex<Self>
 	where Self: UpperHex {
@@ -104,6 +218,20 @@ pub trait FmtForward: Sized {
 	/// traits when `self` can be viewed as an iterator whose *items* implement
 	/// them. It iterates over `&self` and prints each item according to the
 	/// formatting specifier provided.
+	///
+	/// ## Examples
+	///
+	/// ```rust
+	/// # #[cfg(feature = "std")] {
+	/// use wyz::fmt::*;
+	///
+	/// let seq = [10, 20, 30, 40];
+	/// assert_eq!(
+	///   format!("{:?}", seq.fmt_list().fmt_lower_hex()),
+	///   "[a, 14, 1e, 28]",
+	/// );
+	/// # }
+	/// ```
 	#[inline(always)]
 	fn fmt_list(self) -> FmtList<Self>
 	where for<'a> &'a Self: IntoIterator {
@@ -453,5 +581,10 @@ mod tests {
 		assert_eq!(format!("{:02x}", list.fmt_list()), "[00, 0a, 14, 1e]");
 		assert_eq!(format!("{:02o}", list.fmt_list()), "[00, 12, 24, 36]");
 		assert_eq!(format!("{:02X}", list.fmt_list()), "[00, 0A, 14, 1E]");
+
+		assert_eq!(
+			format!("{:02?}", list.fmt_list().fmt_lower_hex()),
+			"[00, 0a, 14, 1e]"
+		);
 	}
 }
