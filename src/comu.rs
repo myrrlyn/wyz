@@ -613,7 +613,7 @@ where T: 'a
 }
 
 /// [`Address`] cannot be constructed over null pointers.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct NullPtrError;
 
 impl Display for NullPtrError {

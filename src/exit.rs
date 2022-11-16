@@ -23,6 +23,7 @@ the program with a panic due to `SIGPIPE`, and *not* call `process::exit()`.
 
 ```rust,should_panic
 wyz::exit!(3, "Error status: {}", "testing");
+```
 !*/
 
 #![cfg(feature = "std")]
