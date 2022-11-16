@@ -6,6 +6,11 @@ This document is written according to the [Keep a Changelog][kac] style.
 
 ## 0
 
+### 0.6.0
+
+Strip the `comu` module (migrated to `funty 3.0`) and the `wm` module (an idle
+sketch I will never seriously use).
+
 ### 0.5.0
 
 Added the `Bidi` iterator adapter, which applies a `.rev()` on construction if a

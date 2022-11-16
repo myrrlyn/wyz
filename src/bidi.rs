@@ -95,12 +95,12 @@ where I: DoubleEndedIterator
 
 	#[inline]
 	fn next(&mut self) -> Option<Self::Item> {
-		(&mut self.next)(&mut self.inner)
+		(self.next)(&mut self.inner)
 	}
 
 	#[inline]
 	fn nth(&mut self, n: usize) -> Option<Self::Item> {
-		(&mut self.nth)(&mut self.inner, n)
+		(self.nth)(&mut self.inner, n)
 	}
 
 	#[inline]
@@ -127,12 +127,12 @@ where I: DoubleEndedIterator
 {
 	#[inline]
 	fn next_back(&mut self) -> Option<Self::Item> {
-		(&mut self.next_back)(&mut self.inner)
+		(self.next_back)(&mut self.inner)
 	}
 
 	#[inline]
 	fn nth_back(&mut self, n: usize) -> Option<Self::Item> {
-		(&mut self.nth_back)(&mut self.inner, n)
+		(self.nth_back)(&mut self.inner, n)
 	}
 }
 

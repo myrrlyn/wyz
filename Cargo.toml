@@ -6,7 +6,7 @@
 
 [package]
 name = "wyz"
-version = "0.5.0"
+version = "0.6.0"
 authors = [
 	"myrrlyn <self@myrrlyn.dev>",
 ]
@@ -28,6 +28,7 @@ keywords = [
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/myrrlyn/wyz"
+rust-version = "1.40"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -40,15 +41,8 @@ optional = true
 [dependencies.tap]
 version = "1"
 
-[dependencies.typemap]
-version = "0.3"
-optional = true
 
 [features]
 alloc = []
-garbage = [
-	"once_cell",
-	"typemap",
-]
 default = ["std"]
 std = ["alloc"]

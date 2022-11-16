@@ -1,15 +1,15 @@
-<div class="title-block" style="text-align: center;" align="center">
+<div style="text-align: center;" align="center">
 
 # `wyz`
 
 ## myrrlyn’s wyzyrdly library <!-- omit in toc -->
 
-[![Crate][crate_img]][crate]
-[![Documentation][docs_img]][docs]
+[![Latest Version][version_img]][crate_link]
+[![MSRV][msrv_img]][crate_link]
 [![License][license_img]][license_file]
 
-[![Crate Downloads][downloads_img]][crate]
-[![Crate Size][loc_img]][loc]
+[![Documentation][docs_img]][docs_link]
+[![Crate Downloads][downloads_img]][crate_link]
 
 </div>
 
@@ -23,11 +23,9 @@ their compilation cost is small enough to essentially not matter.
 ## Modules <!-- omit in toc -->
 
 1. [`bidi`](#bidi)
-1. [`comu`](#comu)
 1. [`exit`](#exit)
 1. [`fmt`](#fmt)
 1. [`range`](#range)
-1. [`wm`](#wm)
 
 ## `bidi`
 
@@ -40,22 +38,6 @@ methods (`.next_back()`, `.nth_back()`) and vice-versa; when the condition is
 
 This only checks the condition upon initial creation; it is otherwise
 branchless.
-
-## `comu`
-
-This provides a generalization system for mutability, pointers, and references.
-It lifts the `const` and `mut` *name permissions* into the type system, with
-the `Const`, `Mut`, and `Frozen<M>` types, and allows containers to generalize
-over mutability permissions with the `Mutability` trait.
-
-Additionally, it provides the `Address` and `Reference` types, which are
-equivalent to pointers and references. `Address<Const, T>` is `*const T`,
-`Address<Mut, T>` is `*mut T`, `Reference<Const, T>` is `&T`, and
-`Reference<Mut, T>` is `&mut T`.
-
-These do not necessarily have a complete port of the pointer and reference
-fundamental APIs, as this module is primarily written as a minimum product
-necessary for `bitvec`’s use, rather than a goal in its own right. PRs welcome!
 
 ## `exit`
 
@@ -130,27 +112,11 @@ only used with `R: RangeBounds<usize>`, again because it is an MVP for bitvec’
 use rather than a project in its own right. It normalizes arbitrary ranges into
 the `Range` concrete type. PRs welcome!
 
-## `wm`
-
-This is an experimental module whose sole purpose is to implement an off-thread
-destructor. It works by wrapping `Send` types so that when they go out of scope,
-the value is sent to a background thread whose sole job is to take objects off
-the queue and run their destructor. The queue is infinite and non-blocking, so
-your primary workers can be guaranteed that transmission will not stall them
-unduly.
-
-[crate]: https://crates.io/crates/wyz "Crate Link"
-[crate_img]: https://img.shields.io/crates/v/wyz.svg?logo=rust "Crate Page"
-[docs]: https://docs.rs/wyz "Documentation"
-[docs_img]: https://docs.rs/wyz/badge.svg "Documentation Display"
-[downloads_img]: https://img.shields.io/crates/dv/wyz.svg?logo=rust "Crate Downloads"
-[license_file]: https://github.com/myrrlyn/wyz/blob/master/LICENSE.txt "License File"
-[license_img]: https://img.shields.io/crates/l/wyz.svg "License Display"
-[loc]: https://github.com/myrrlyn/wyz "Repository"
-[loc_img]: https://tokei.rs/b1/github/myrrlyn/wyz?category=code "Repository Size"
-
-<style type="text/css">
-.title-block {
-  text-align: center;
-}
-</style>
+[crate_link]: https://crates.io/crates/wyz "Crate Link"
+[docs_link]: https://docs.rs/wyz/latest/wyz "Documentation"
+[docs_img]: https://img.shields.io/docsrs/wyz/latest.svg?style=for-the-badge "Documentation Display"
+[downloads_img]: https://img.shields.io/crates/dv/wyz.svg?style=for-the-badge "Crate Downloads"
+[license_file]: https://github.com/bitvecto-rs/wyz/blob/master/LICENSE.txt "License File"
+[license_img]: https://img.shields.io/crates/l/wyz.svg?style=for-the-badge "License Display"
+[msrv_img]: https://img.shields.io/badge/MSRV-1.50-f46623?style=for-the-badge&logo=rust "Minimum Supported Rust Version: 1.50"
+[version_img]: https://img.shields.io/crates/v/wyz?color=f46623&style=for-the-badge "wyz version badge"
