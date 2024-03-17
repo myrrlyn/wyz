@@ -417,7 +417,7 @@ where
 	for<'a> <&'a T as IntoIterator>::Item: Debug,
 {
 	fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
-		fmt.debug_list().entries((&self.0).into_iter()).finish()
+		fmt.debug_list().entries(&self.0).finish()
 	}
 }
 
