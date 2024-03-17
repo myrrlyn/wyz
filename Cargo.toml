@@ -38,10 +38,6 @@ rust-version = "1.40"
 version = "1"
 optional = true
 
-[dependencies.tap]
-version = "1.0.1"
-
-
 [features]
 alloc = []
 default = ["std"]
